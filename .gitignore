@@ -1,0 +1,19 @@
+# Credentials and local configuration
+.raisim
+activation.raisim
+*.raisim
+.codex/
+.agents/
+.aws/
+.env
+.env.*
+!.env.example
+
+# Generated artifacts
+*.bundle
+__pycache__/
+*.pyc
+.venv/
+build/
+logs/
+*.log
