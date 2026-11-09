@@ -214,7 +214,7 @@ IMAGE_NAME=railab/raisim2-learning:experiment ./build.bash \
 IMAGE_NAME=railab/raisim2-learning:experiment WORKSPACE_VOLUME=raisim-experiment ./runner.bash
 ```
 
-The defaults `RAISIM_REF=master`, `CODEX_VERSION=latest`, and base-image tags
+The defaults `RAISIM_REF=main`, `CODEX_VERSION=latest`, and base-image tags
 float. Pin these for reproducible experiments. The image records the resolved
 RaiSim revision at `/opt/raisim-source-revision` and Python package versions at
 `/opt/raisim-python-versions.txt`. PyTorch uses the official
@@ -228,3 +228,20 @@ checks. A real image build, GPU execution, license activation, and training
 have **not** been validated in the authoring workspace because Docker is not
 installed there and shell access to GitHub is unavailable. Run the build and
 GPU checks above on the target server before using this for experiments.
+
+## Fix for older Dockerfiles using `master`
+
+`raisim2Lib` uses `main`. If the build fails with
+`pathspec 'master' did not match any file(s) known to git`, the old Dockerfile
+selected a nonexistent branch. With the old files, the immediate workaround is:
+
+```bash
+./build.bash --build-arg RAISIM_REF=main --progress=plain
+```
+
+The corrected Dockerfile fetches only the requested revision with depth 1,
+then caches that checkout separately from the CMake installation. A later
+installation failure can reuse the downloaded source. Do not use `--no-cache`
+for a routine retry. A failed RUN layer itself is not cached, so the previously
+failed download must run again once. `main` stays cached on subsequent builds;
+to deliberately update it, pass a new commit SHA through `RAISIM_REF`.

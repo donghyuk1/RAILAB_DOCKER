@@ -4,7 +4,6 @@ FROM node:22-bookworm-slim AS node
 FROM ${CUDA_IMAGE}
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 ARG DEBIAN_FRONTEND=noninteractive
-ARG RAISIM_REF=master
 ARG CODEX_VERSION=latest
 ARG BUILD_JOBS=4
 ENV LANG=C.UTF-8 \
@@ -32,10 +31,18 @@ RUN python3 -m venv "$VIRTUAL_ENV" && \
 # Constrain core dependencies while installing the upstream learning requirements.
 COPY requirements.txt /opt/raisim-requirements.txt
 RUN pip install --no-cache-dir -r /opt/raisim-requirements.txt
-RUN git clone --recursive https://github.com/raisimTech/raisim2Lib.git "$WORKSPACE/raisim2Lib" && \
-    cd "$WORKSPACE/raisim2Lib" && git checkout "$RAISIM_REF" && \
-    git submodule update --init --recursive && git rev-parse HEAD > /opt/raisim-source-revision && \
-    cmake -S . -B /tmp/raisim-build -DCMAKE_INSTALL_PREFIX="$LOCAL_INSTALL" \
+# Keep the source download in its own cached layer so a later CMake failure
+# does not force another download. Resolve the requested branch/tag/SHA directly.
+ARG RAISIM_REF=main
+RUN git init "$WORKSPACE/raisim2Lib" && \
+    cd "$WORKSPACE/raisim2Lib" && \
+    git remote add origin https://github.com/raisimTech/raisim2Lib.git && \
+    git fetch --depth 1 origin "$RAISIM_REF" && \
+    git checkout --detach FETCH_HEAD && \
+    git submodule update --init --recursive --depth 1 && \
+    git rev-parse HEAD > /opt/raisim-source-revision
+RUN cmake -S "$WORKSPACE/raisim2Lib" -B /tmp/raisim-build \
+      -DCMAKE_INSTALL_PREFIX="$LOCAL_INSTALL" \
       -DRAISIM_EXAMPLE=OFF -DRAISIM_PY=OFF -DRAISIM_MATLAB=OFF && \
     cmake --install /tmp/raisim-build && rm -rf /tmp/raisim-build
 WORKDIR /raisim_ws/raisim2Lib/raisimGymTorch
