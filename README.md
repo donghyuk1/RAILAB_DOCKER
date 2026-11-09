@@ -13,8 +13,8 @@ Container Toolkit (see the setup guide above):
 ```bash
 mkdir -p ~/docker
 cd ~/docker
-git clone git@github.com:donghyuk1/RAILAB_SERVER.git
-cd RAILAB_SERVER/raisim_learning
+git clone git@github.com:donghyuk1/RAILAB_DOCKER.git
+cd RAILAB_DOCKER/raisim_learning
 ./build.bash
 GPUS=0 ./runner.bash
 ```
